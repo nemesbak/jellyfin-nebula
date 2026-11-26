@@ -146,24 +146,31 @@ Para equipos lentos, televisores o si simplemente no te gustan los efectos. Todo
 
 ### 🌐 Idioma
 
-Los pocos textos del tema (las etiquetas **Etiquetas** y **Enlaces**, la marca **Visto** de los episodios, el aviso de favoritos vacíos) y los botones del carrusel siguen el **idioma de la interfaz** de cada usuario en Jellyfin: en español si la tiene en español y en inglés si no. No hay que configurar nada.
+Los textos de Nebula (los botones del carrusel, las etiquetas **Etiquetas** y **Enlaces**, la marca **Visto** de los episodios, el aviso de favoritos vacíos) están en **español** e **inglés**, y siguen solos el **idioma de la interfaz** de cada usuario en Jellyfin/Emby.
 
-Para cambiar un texto, o traducirlo a otro idioma, pega esto en «CSS personalizado» debajo de las líneas `@import`:
+Con el [carrusel](#-carrusel-destacado-opcional) instalado hay además un **botón de idioma** (文A) en la barra superior, junto a la búsqueda. Cada persona puede elegir *Automático* (el de Jellyfin) o un idioma concreto; la elección se guarda en ese navegador. Sin el carrusel (solo el tema) no hay botón, pero los textos siguen igualmente el idioma de la interfaz.
+
+**Un idioma por defecto para todos** — en «CSS personalizado», debajo de las líneas `@import` (cada uno puede cambiarlo con el botón):
 
 ```css
-/* Cambiar un texto para todos */
-:root { --nb-txt-watched: "✓ Ya visto"; }
-
-/* Traducir, solo para quien tenga la interfaz en ese idioma (aquí francés) */
-:root:lang(fr) {
-  --nb-txt-tags: "Étiquettes";
-  --nb-txt-links: "Liens";
-  --nb-txt-watched: "✓ Vu";
-  --nb-txt-no-favorites: "Pas encore de favoris\A Appuyez sur ♥ sur un film ou une série pour l'ajouter ici";
-}
+:root { --nb-lang: es; }
 ```
 
-> `\A` es un salto de línea. Los textos del carrusel están en `TXT`, al principio de `nebula-home.js` (y de `emby/nebula-emby-home.js`); `--nb-hero-lang` fuerza su idioma (ver *Personalizar el carrusel* más abajo).
+**Cambiar un texto** — también en «CSS personalizado» (`\A` es un salto de línea):
+
+```css
+:root { --nb-txt-watched: "✓ Ya visto"; }
+```
+
+**Ocultar el botón de idioma:** `.nbLangBtn { display: none !important; }`
+
+**Añadir un idioma** — los textos están en [`localization/`](localization), un archivo JSON por idioma:
+
+1. Copia `localization/en.json` como `localization/<código>.json` (`fr.json`, `pt-br.json`…) y traduce los valores. Lo que falte sale en inglés.
+2. Añádelo a `localization/languages.json`, p. ej. `"fr": "Français"`.
+3. Los plurales son así: `{ "one": "{n} temporada", "other": "{n} temporadas" }` (añade `few`/`many` si tu idioma los usa).
+
+El instalador copia la carpeta entera al servidor junto con el carrusel. El CSS del tema por sí solo solo sabe español e inglés.
 
 ### 📋 Ejemplo completo
 
@@ -399,7 +406,6 @@ Se ajusta desde el **mismo cuadro de «Código CSS personalizado»**, debajo de 
 | `--nb-hero-overview` / `-genres` / `-rating` | Mostrar sinopsis / géneros / nota (`1` sí, `0` no) | `1` |
 | `--nb-hero-buttons` | Botones «Ver ahora» y «Más info» | `1` |
 | `--nb-hero-play` | `1` = «Ver ahora» reproduce · `0` = solo abre la ficha | `1` |
-| `--nb-hero-lang` | Idioma de los textos del carrusel: `en` · `es` | el de la interfaz |
 | `--nb-hero-height` | Alto en ordenador | `min(68vh, 640px)` |
 | `--nb-hero-height-mobile` | Alto en móvil | `62vh` |
 

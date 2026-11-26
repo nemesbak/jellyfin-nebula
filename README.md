@@ -148,24 +148,31 @@ For slow devices, TVs, or if you just don't like the effects. Everything appears
 
 ### 🌐 Language
 
-The theme's few texts (the **Tags** and **Links** labels, the **Watched** badge on episodes, the empty-favorites message) and the carousel buttons follow each user's **display language** in Jellyfin: English by default, Spanish when the interface is in Spanish. Nothing to set up.
+Nebula's texts (the carousel buttons, the **Tags** and **Links** labels, the **Watched** badge on episodes, the empty-favorites message) come in **English** and **Spanish**, and follow each user's **display language** in Jellyfin/Emby on their own.
 
-To change a text, or translate it into another language, paste this in "Custom CSS" below the `@import` lines:
+With the [carousel](#-featured-carousel-optional) installed there's also a **language button** (文A) in the top bar, next to Search. Each person can pick *Automatic* (follow Jellyfin) or a specific language; the choice is saved in that browser. Without the carousel (theme only) there's no button, but the texts still follow the display language.
+
+**A default for everyone** — in "Custom CSS", below the `@import` lines (each user can still change it with the button):
 
 ```css
-/* Change a text for everyone */
-:root { --nb-txt-watched: "✓ Seen"; }
-
-/* Translate, only for users with the interface in that language (here French) */
-:root:lang(fr) {
-  --nb-txt-tags: "Étiquettes";
-  --nb-txt-links: "Liens";
-  --nb-txt-watched: "✓ Vu";
-  --nb-txt-no-favorites: "Pas encore de favoris\A Appuyez sur ♥ sur un film ou une série pour l'ajouter ici";
-}
+:root { --nb-lang: en; }
 ```
 
-> `\A` is a line break. The carousel texts live in `TXT` at the top of `nebula-home.js` (and `emby/nebula-emby-home.js`); `--nb-hero-lang` forces their language (see *Customizing the carousel* below).
+**Change a single text** — also in "Custom CSS" (`\A` is a line break):
+
+```css
+:root { --nb-txt-watched: "✓ Seen"; }
+```
+
+**Hide the language button:** `.nbLangBtn { display: none !important; }`
+
+**Add a language** — the texts live in [`localization/`](localization), one JSON file per language:
+
+1. Copy `localization/en.json` to `localization/<code>.json` (`fr.json`, `pt-br.json`…) and translate the values. Anything missing falls back to English.
+2. Add it to `localization/languages.json`, e.g. `"fr": "Français"`.
+3. Plurals look like `{ "one": "{n} season", "other": "{n} seasons" }` (add `few`/`many` if your language uses them).
+
+The installer copies the whole folder to your server along with the carousel. The theme CSS alone only knows English and Spanish.
 
 ### 📋 Full example
 
@@ -403,7 +410,6 @@ Configured from the **same "Custom CSS code" box**, below the theme lines. Only 
 | `--nb-hero-overview` / `-genres` / `-rating` | Show overview / genres / rating (`1` yes, `0` no) | `1` |
 | `--nb-hero-buttons` | "Play now" and "More info" buttons | `1` |
 | `--nb-hero-play` | `1` = "Play now" starts playback · `0` = just opens the item page | `1` |
-| `--nb-hero-lang` | Language of the carousel texts: `en` · `es` | the display language |
 | `--nb-hero-height` | Height on desktop | `min(68vh, 640px)` |
 | `--nb-hero-height-mobile` | Height on mobile | `62vh` |
 

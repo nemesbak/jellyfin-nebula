@@ -5,20 +5,31 @@
   'use strict';
   var DEF = {
     count: 8, interval: 8, source: 'recent', types: 'Movie,Series', library: '', days: 120,
-    unwatched: 1, logo: 1, overview: 1, genres: 1, rating: 1, buttons: 1, play: 1, lang: ''
+    unwatched: 1, logo: 1, overview: 1, genres: 1, rating: 1, buttons: 1, play: 1
   };
   var cache = null, cacheKey = null, cacheAt = 0;
 
-  /* Textos del carrusel. Sin «lang» siguen el idioma de la interfaz (<html lang="…">) o, si no lo hay, el del navegador.
-     Para añadir un idioma, copia el bloque «en» con su código (fr, de, pt-br…) y tradúcelo. */
-  var TXT = {
-    en: { play: 'Play now', info: 'More info', prev: 'Previous', next: 'Next', goTo: 'Go to slide {n}', season: '{n} season', seasons: '{n} seasons', series: 'Series' },
-    es: { play: 'Ver ahora', info: 'Más info', prev: 'Anterior', next: 'Siguiente', goTo: 'Ir a {n}', season: '{n} temporada', seasons: '{n} temporadas', series: 'Serie' }
-  };
-  function textos(c) {
-    var l = String(c.lang || document.documentElement.lang || navigator.language || 'en').toLowerCase(), T = TXT[l] || TXT[l.split('-')[0]] || TXT.en;
-    return function (k, n) { return (T[k] || TXT.en[k]).replace('{n}', n); };
+  /* Textos: localization/<idioma>.json, a través de localization/nebula-i18n.js (botón de idioma incluido).
+     Se busca junto al repo (../localization); si no está (instalaciones antiguas), en el CDN. */
+  var YO = document.currentScript && document.currentScript.src;
+  var I18N = 'localization/nebula-i18n.js', CDN = 'https://cdn.jsdelivr.net/gh/nemesbak/jellyfin-nebula@main/';
+  var i18nP = null;
+  function i18n() {
+    if (!i18nP) i18nP = new Promise(function (ok, ko) {
+      if (window.NebulaI18n) return ok();
+      function script(url, otra) {
+        var s = document.createElement('script');
+        s.src = url; s.onload = ok;
+        s.onerror = function () { s.remove(); if (otra) script(otra); else ko(new Error('no se pudo cargar ' + url)); };
+        document.head.appendChild(s);
+      }
+      var local = YO && new URL('../' + I18N, YO).href.replace(/[?#].*$/, '') + (YO.match(/\?v=[^&#]*/) || [''])[0];
+      script(local || CDN + I18N, local && CDN + I18N);
+    }).then(function () { window.NebulaI18n.onChange(rehacer); return window.NebulaI18n; })
+      .catch(function (e) { console.warn('[NebulaHero]', e); return null; });
+    return i18nP.then(function (I) { return I && I.load(); });
   }
+  function sinTextos() { return ''; }
 
   function cfg() {
     var c = {}, st = getComputedStyle(document.documentElement), ext = window.NebulaHero || {};
@@ -88,13 +99,13 @@
   function esc(s) { return String(s || '').replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function icono(n) { return '<i class="md-icon nbHero-ico">' + n + '</i>'; }
 
-  function construir(items, c) {
-    var sid = api().serverId(), t = textos(c);
+  function construir(items, c, t) {
+    var sid = api().serverId();
     var el = document.createElement('section');
     el.className = 'nbHero nbHero--emby';
     el.innerHTML =
       '<div class="nbHero-slides">' + items.map(function (i, n) {
-        var meta = [i.ProductionYear, i.Type === 'Series' ? (i.ChildCount ? t(i.ChildCount === 1 ? 'season' : 'seasons', i.ChildCount) : t('series')) : dur(i.RunTimeTicks), i.OfficialRating]
+        var meta = [i.ProductionYear, i.Type === 'Series' ? (i.ChildCount ? t('carousel.seasons', { n: i.ChildCount }) : t('carousel.series')) : dur(i.RunTimeTicks), i.OfficialRating]
           .filter(Boolean).map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('');
         if (c.rating && i.CommunityRating) meta += '<span class="nbHero-star">★ ' + i.CommunityRating.toFixed(1) + '</span>';
         var gen = (c.genres ? i.Genres || [] : []).slice(0, 3).map(function (g) { return '<span class="nbHero-chip">' + esc(g) + '</span>'; }).join('');
@@ -108,14 +119,14 @@
             '<div class="nbHero-genres">' + gen + '</div>' +
             (c.overview ? '<p class="nbHero-overview">' + esc(i.Overview) + '</p>' : '') +
             (!c.buttons ? '' : '<div class="nbHero-actions">' +
-              '<a class="nbHero-btn nbHero-btn--main" data-play="' + i.Id + '" href="' + url + '">' + icono('play_arrow') + esc(t('play')) + '</a>' +
-              '<a class="nbHero-btn" href="' + url + '">' + icono('info') + esc(t('info')) + '</a>' +
+              '<a class="nbHero-btn nbHero-btn--main" data-play="' + i.Id + '" href="' + url + '">' + icono('play_arrow') + esc(t('carousel.play')) + '</a>' +
+              '<a class="nbHero-btn" href="' + url + '">' + icono('info') + esc(t('carousel.moreInfo')) + '</a>' +
             '</div>') +
           '</div></article>';
       }).join('') + '</div>' +
-      '<button class="nbHero-nav nbHero-prev" aria-label="' + esc(t('prev')) + '">' + icono('chevron_left') + '</button>' +
-      '<button class="nbHero-nav nbHero-next" aria-label="' + esc(t('next')) + '">' + icono('chevron_right') + '</button>' +
-      '<div class="nbHero-dots">' + items.map(function (_, n) { return '<button class="nbHero-dot' + (n === 0 ? ' is-active' : '') + '" data-i="' + n + '" aria-label="' + esc(t('goTo', n + 1)) + '"><i></i></button>'; }).join('') + '</div>';
+      '<button class="nbHero-nav nbHero-prev" aria-label="' + esc(t('carousel.previous')) + '">' + icono('chevron_left') + '</button>' +
+      '<button class="nbHero-nav nbHero-next" aria-label="' + esc(t('carousel.next')) + '">' + icono('chevron_right') + '</button>' +
+      '<div class="nbHero-dots">' + items.map(function (_, n) { return '<button class="nbHero-dot' + (n === 0 ? ' is-active' : '') + '" data-i="' + n + '" aria-label="' + esc(t('carousel.goToSlide', { n: n + 1 })) + '"><i></i></button>'; }).join('') + '</div>';
 
     var actual = 0, timer = null, slides = el.querySelectorAll('.nbHero-slide'), dots = el.querySelectorAll('.nbHero-dot');
     function ir(n) {
@@ -152,11 +163,17 @@
     var c = cfg();
     if (c.count <= 0) return;
     montando = true;
-    cargar(c).then(function (items) {
+    Promise.all([cargar(c), i18n()]).then(function (r) {
       montando = false;
-      if (!items.length || v.querySelector('.nbHero')) return;
-      cont.insertBefore(construir(items, c), cont.firstChild);
+      if (!r[0].length || v.querySelector('.nbHero')) return;
+      cont.insertBefore(construir(r[0], c, r[1] ? r[1].t : sinTextos), cont.firstChild);
     }).catch(function (e) { montando = false; console.warn('[NebulaHero]', e); });
+  }
+
+  // Al cambiar de idioma con el botón de la barra, se rehace el carrusel con los textos nuevos
+  function rehacer() {
+    Array.prototype.forEach.call(document.querySelectorAll('.nbHero'), function (h) { h.remove(); });
+    montar();
   }
 
   // «Ver ahora»: al llegar a la ficha pulsa su botón de reproducir una sola vez
@@ -208,4 +225,5 @@
     (document.hidden ? function (f) { setTimeout(f, 50); } : requestAnimationFrame)(function () { pend = false; if (enHome()) montar(); else autoplay(); });
   }).observe(document.documentElement, { childList: true, subtree: true });
   window.addEventListener('hashchange', montar);
+  i18n();   // ya desde el principio: botón de idioma en todas las páginas
 })();

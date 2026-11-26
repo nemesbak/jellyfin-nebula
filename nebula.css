@@ -13,16 +13,17 @@
   --nb-on-accent: #fff;      /* color del texto/iconos sobre el acento (oscúrecelo si usas un acento claro) */
 }
 
-/* Textos del tema: en inglés y, si la interfaz de Jellyfin está en español (<html lang="es">), en español.
-   Se cambian (o traducen) en «CSS personalizado»:  :root { --nb-txt-watched: "✓ Seen"; }
-   Otro idioma, solo para quien tenga la interfaz en él:  :root:lang(fr) { --nb-txt-tags: "Étiquettes"; … } */
-:root {
+/* Textos del tema. Los de verdad están en localization/<idioma>.json (sección «theme»): con el carrusel instalado,
+   localization/nebula-i18n.js los pone aquí en el idioma elegido con el botón de la barra.
+   Esto es solo lo que se ve SIN ese script (solo CSS, app de iOS): inglés, o español si la interfaz está en español.
+   Todo con :where() (especificidad 0) para que ganen el script y el «CSS personalizado»:  :root { --nb-txt-watched: "✓ Seen"; } */
+:where(:root) {
   --nb-txt-tags: "Tags";
   --nb-txt-links: "Links";
   --nb-txt-watched: "✓ Watched";
   --nb-txt-no-favorites: "No favorites yet\A Tap ♥ on any movie or show and it will show up here";
 }
-:root:where(:lang(es)) {   /* :where() deja la especificidad de :root, así el «CSS personalizado» puede cambiarlos */
+:where(:root:lang(es)) {
   --nb-txt-tags: "Etiquetas";
   --nb-txt-links: "Enlaces";
   --nb-txt-watched: "✓ Visto";

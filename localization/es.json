@@ -1,0 +1,21 @@
+{
+  "carousel": {
+    "play": "Ver ahora",
+    "moreInfo": "Más info",
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "goToSlide": "Ir a {n}",
+    "seasons": { "one": "{n} temporada", "other": "{n} temporadas" },
+    "series": "Serie"
+  },
+  "theme": {
+    "tags": "Etiquetas",
+    "links": "Enlaces",
+    "watched": "✓ Visto",
+    "noFavorites": "Aún no tienes favoritos\nPulsa el ♥ en cualquier peli o serie y aparecerá aquí"
+  },
+  "language": {
+    "title": "Idioma",
+    "auto": "Automático"
+  }
+}

@@ -29,7 +29,8 @@ HAY_DOCKER=0; command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1 &
 # --- acceso al destino: T = nombre del contenedor, o «host» para el propio sistema ---
 x()    { if [ "$T" = host ]; then "$@"; else docker exec "$T" "$@"; fi; }
 xi()   { if [ "$T" = host ]; then "$@"; else docker exec -i "$T" "$@"; fi; }
-meter() { if [ "$T" = host ]; then cp "$1" "$2" && chmod 644 "$2"; else docker cp "$1" "$T:$2" >/dev/null; fi; }
+# copia el CONTENIDO de la carpeta $1 en la carpeta $2 del destino
+meter() { x mkdir -p "$2" && if [ "$T" = host ]; then cp -R "$1/." "$2/" && chmod -R a+rX "$2"; else docker cp "$1/." "$T:$2/" >/dev/null; fi; }
 nombre() { if [ "$T" = host ]; then echo "este equipo"; else echo "el contenedor «$T»"; fi; }
 
 # ¿Jellyfin o Emby? Se mira qué carpeta web tiene
@@ -40,28 +41,42 @@ detectar() {
   done
   [ -n "$WEB" ] || return 1
   case "$WEB" in
-    *dashboard-ui*) SERVIDOR=emby;     JS=nebula-emby-home.js; JS_SRC="emby/nebula-emby-home.js"; CSS_SRC="emby/nebula-emby.css"; PRE="/emby"; KEY="${EMBY_API_KEY:-${JELLYFIN_API_KEY:-}}" ;;
-    *)              SERVIDOR=jellyfin; JS=nebula-home.js;      JS_SRC="nebula-home.js";            CSS_SRC="nebula.css";            PRE="";      KEY="${JELLYFIN_API_KEY:-${EMBY_API_KEY:-}}" ;;
+    *dashboard-ui*) SERVIDOR=emby;     JS_SRC="emby/nebula-emby-home.js"; CSS_SRC="emby/nebula-emby.css"; PRE="/emby"; KEY="${EMBY_API_KEY:-${JELLYFIN_API_KEY:-}}" ;;
+    *)              SERVIDOR=jellyfin; JS_SRC="nebula-home.js";           CSS_SRC="nebula.css";            PRE="";      KEY="${JELLYFIN_API_KEY:-${EMBY_API_KEY:-}}" ;;
   esac
   [ -n "${JELLYFIN_API_KEY:-}" ] && [ -n "${EMBY_API_KEY:-}" ] && { [ $SERVIDOR = emby ] && KEY="$EMBY_API_KEY" || KEY="$JELLYFIN_API_KEY"; }
   return 0
 }
 
+# Descarga un archivo del repo en $TMP, con la misma ruta
+bajar() { mkdir -p "$TMP/$(dirname "$1")" && curl -fsSL "$REPO/$1" -o "$TMP/$1"; }
+
+# Todo va a la carpeta «nebula» de la web, con la misma estructura que el repo:
+#   nebula/nebula-home.js (o nebula/emby/nebula-emby-home.js) + nebula/localization/ (idiomas)
 carrusel() {
-  local TMP L R V; TMP="$(mktemp)"
-  if x grep -q 'aurora-home.js' "$WEB/index.html" 2>/dev/null; then   # restos de la versión anterior (Aurora Glass)
-    x sed -i 's#<script defer src="aurora-home.js?v=[^"]*"></script>##' "$WEB/index.html"; x rm -f "$WEB/aurora-home.js"
+  local TMP V c j
+  [ -n "$WEB" ] || return 1
+  for j in aurora-home.js nebula-home.js nebula-emby-home.js; do   # versiones anteriores, sueltas en la raíz de la web
+    if x grep -q "src=\"$j?v=" "$WEB/index.html" 2>/dev/null; then
+      x sed -i "s#<script defer src=\"$j?v=[^\"]*\"></script>##" "$WEB/index.html"; x rm -f "$WEB/$j"
+    fi
+  done
+  TMP="$(mktemp -d)"
+  if ! { bajar "$JS_SRC" && bajar localization/nebula-i18n.js && bajar localization/languages.json; }; then
+    echo "  ✗ No se pudo descargar el carrusel (¿hay internet?)"; rm -rf "$TMP"; return 1
   fi
-  curl -fsSL "$REPO/$JS_SRC" -o "$TMP" || { echo "  ✗ No se pudo descargar el carrusel (¿hay internet?)"; rm -f "$TMP"; return 1; }
-  L=$(md5sum < "$TMP" | cut -c1-32)
-  R=$(x md5sum "$WEB/$JS" 2>/dev/null | cut -c1-32)
-  [ "$L" != "$R" ] && meter "$TMP" "$WEB/$JS" && echo "  ✓ Carrusel copiado"
-  rm -f "$TMP"
-  V=${L:0:8}
-  if ! x grep -q "$JS?v=$V" "$WEB/index.html"; then
-    x sed -i -e "s#<script defer src=\"$JS?v=[^\"]*\"></script>##" \
-      -e "s#</body>#<script defer src=\"$JS?v=$V\"></script></body>#" "$WEB/index.html" && echo "  ✓ Carrusel enganchado"
+  for c in $(grep -o '"[A-Za-z-]*"[[:space:]]*:' "$TMP/localization/languages.json" | sed 's/[":[:space:]]//g'); do
+    bajar "localization/$c.json" || echo "  · Falta el idioma «$c»"
+  done
+  chmod -R a+rX "$TMP"
+  V=$(cd "$TMP" && find . -type f | LC_ALL=C sort | xargs cat | md5sum | cut -c1-8)   # cambia si cambia cualquier archivo
+  if ! x test -f "$WEB/nebula/$JS_SRC" || ! x grep -q "nebula/$JS_SRC?v=$V" "$WEB/index.html"; then
+    x rm -rf "$WEB/nebula"
+    meter "$TMP" "$WEB/nebula" && echo "  ✓ Carrusel e idiomas copiados"
+    x sed -i -e "s#<script defer src=\"nebula/$JS_SRC?v=[^\"]*\"></script>##" \
+      -e "s#</body>#<script defer src=\"nebula/$JS_SRC?v=$V\"></script></body>#" "$WEB/index.html" && echo "  ✓ Carrusel enganchado"
   fi
+  rm -rf "$TMP"
 }
 
 # Puerto interno: con red «host» el 8096 puede ser OTRO servidor (p. ej. Jellyfin junto a Emby)
@@ -94,10 +109,10 @@ tema_css() {
 
 quitar() {
   local j
-  for j in nebula-home.js nebula-emby-home.js aurora-home.js; do
+  for j in nebula/nebula-home.js nebula/emby/nebula-emby-home.js nebula-home.js nebula-emby-home.js aurora-home.js; do
     x sed -i "s#<script defer src=\"$j?v=[^\"]*\"></script>##" "$WEB/index.html"
-    x rm -f "$WEB/$j"
   done
+  x rm -rf "$WEB/nebula" "$WEB/nebula-home.js" "$WEB/nebula-emby-home.js" "$WEB/aurora-home.js"
   echo "  ✓ Carrusel quitado de $SERVIDOR ($(nombre))"
 }
 
