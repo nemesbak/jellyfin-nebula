@@ -13,6 +13,23 @@
   --nb-on-accent: #fff;      /* color del texto/iconos sobre el acento (oscúrecelo si usas un acento claro) */
 }
 
+/* Textos del tema. Los de verdad están en localization/<idioma>.json (sección «theme»): con el carrusel instalado,
+   localization/nebula-i18n.js los pone aquí en el idioma de la interfaz de cada usuario (sea cual sea).
+   Esto es solo lo que se ve SIN ese script (solo CSS, app de iOS): inglés, o español si la interfaz está en español.
+   Todo con :where() (especificidad 0) para que ganen el script y el «CSS personalizado»:  :root { --nb-txt-watched: "✓ Seen"; } */
+:where(:root) {
+  --nb-txt-tags: "Tags";
+  --nb-txt-links: "Links";
+  --nb-txt-watched: "✓ Watched";
+  --nb-txt-no-favorites: "No favorites yet\A Tap ♥ on any movie or show and it will show up here";
+}
+:where(:root:lang(es)) {
+  --nb-txt-tags: "Etiquetas";
+  --nb-txt-links: "Enlaces";
+  --nb-txt-watched: "✓ Visto";
+  --nb-txt-no-favorites: "Aún no tienes favoritos\A Pulsa el ♥ en cualquier peli o serie y aparecerá aquí";
+}
+
 /* Base */
 html { background: var(--nb-bg) !important; }
 body { background: transparent !important; }
@@ -299,7 +316,7 @@ body { color: var(--nb-text); }
 /* Píldoras sin comas */
 .itemTags, .itemExternalLinks, .detailsGroupItem .content { font-size: 0 !important; }
 .itemTags a, .itemExternalLinks a, .detailsGroupItem .content a { font-size: .85rem !important; margin: .15em .3em .15em 0 !important; }
-.itemTags::before { content: "Etiquetas"; font-size: .85rem; color: var(--nb-muted); margin-right: .6em; }
+.itemTags::before { content: var(--nb-txt-tags); font-size: .85rem; color: var(--nb-muted); margin-right: .6em; }
 .detailsGroupItem .label { color: var(--nb-muted); }
 /* Fondo de ficha más visible */
 .backgroundContainer.withBackdrop { opacity: 1 !important; background: linear-gradient(to bottom, rgba(11,11,13,.25), rgba(11,11,13,.82) 50%, var(--nb-bg) 85%) !important; }
@@ -572,7 +589,7 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -2; pointer-even
 .detailSection .itemTags a::before { content: "#"; opacity: .6; margin-right: 1px; }
 .detailSection .itemTags a:hover { color: #fff !important; }
 .detailSection .itemExternalLinks a { font-size: .78rem !important; }
-.detailSection .itemExternalLinks::before { content: "Enlaces"; font-size: .85rem; color: var(--nb-muted); margin-right: .6em; }
+.detailSection .itemExternalLinks::before { content: var(--nb-txt-links); font-size: .85rem; color: var(--nb-muted); margin-right: .6em; }
 
 /* ---------- Ribbon: datos con separadores suaves ---------- */
 .detailRibbon .itemMiscInfo { gap: .2em; align-items: center; }
@@ -819,7 +836,7 @@ select { color-scheme: dark; }
 /* Episodio visto: imagen algo apagada y chip ✓ */
 .listItem-largeImage:has(.playstatebutton-icon-played) .listItemImage-large { filter: saturate(.6) brightness(.8); }
 .listItem-largeImage:has(.playstatebutton-icon-played) .listItemImage-large::before {
-  content: "✓ Visto"; position: absolute; top: 8px; left: 8px; z-index: 2; font-size: .72em; font-weight: 700;
+  content: var(--nb-txt-watched); position: absolute; top: 8px; left: 8px; z-index: 2; font-size: .72em; font-weight: 700;
   padding: .2em .65em; border-radius: 999px; background: rgba(16,185,129,.92); color: #fff;
 }
 
@@ -932,7 +949,7 @@ select { color-scheme: dark; }
 /* ---------- Favoritos vacío ---------- */
 .homePage .pageTabContent[data-index="1"].is-active:not(:has(.card)) { min-height: 50vh; display: grid !important; place-items: center; }
 .homePage .pageTabContent[data-index="1"].is-active:not(:has(.card))::before {
-  content: "Aún no tienes favoritos\A Pulsa el ♥ en cualquier peli o serie y aparecerá aquí";
+  content: var(--nb-txt-no-favorites);
   white-space: pre-line; text-align: center; line-height: 1.7; color: var(--nb-muted); font-size: 1.05em;
 }
 

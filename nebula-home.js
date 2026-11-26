@@ -21,6 +21,28 @@
   };
   var cache = null, cacheKey = null, cacheAt = 0;
 
+  /* Textos: localization/<idioma>.json, a través de localization/nebula-i18n.js, en el idioma de la interfaz.
+     Se busca junto a este archivo; si no está (instalaciones antiguas), en el CDN. */
+  var YO = document.currentScript && document.currentScript.src;
+  var I18N = 'localization/nebula-i18n.js', CDN = 'https://cdn.jsdelivr.net/gh/nemesbak/jellyfin-nebula@main/';
+  var i18nP = null;
+  function i18n() {
+    if (!i18nP) i18nP = new Promise(function (ok, ko) {
+      if (window.NebulaI18n) return ok();
+      function script(url, otra) {
+        var s = document.createElement('script');
+        s.src = url; s.onload = ok;
+        s.onerror = function () { s.remove(); if (otra) script(otra); else ko(new Error('no se pudo cargar ' + url)); };
+        document.head.appendChild(s);
+      }
+      var local = YO && new URL(I18N, YO).href.replace(/[?#].*$/, '') + (YO.match(/\?v=[^&#]*/) || [''])[0];
+      script(local || CDN + I18N, local && CDN + I18N);
+    }).then(function () { window.NebulaI18n.onChange(rehacer); return window.NebulaI18n; })
+      .catch(function (e) { console.warn('[NebulaHero]', e); return null; });
+    return i18nP.then(function (I) { return I && I.load(); });
+  }
+  function sinTextos() { return ''; }
+
   function cfg() {
     var c = {}, st = getComputedStyle(document.documentElement), ext = window.NebulaHero || {};
     Object.keys(DEF).forEach(function (k) {
@@ -84,13 +106,13 @@
   function dur(t) { if (!t) return ''; var m = Math.round(t / 6e8); return m >= 60 ? Math.floor(m / 60) + ' h ' + (m % 60) + ' min' : m + ' min'; }
   function esc(s) { return String(s || '').replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
-  function construir(items, c) {
+  function construir(items, c, t) {
     var sid = api().serverId();
     var el = document.createElement('section');
     el.className = 'nbHero';
     el.innerHTML =
       '<div class="nbHero-slides">' + items.map(function (i, n) {
-        var meta = [i.ProductionYear, i.Type === 'Series' ? (i.ChildCount ? i.ChildCount + (i.ChildCount === 1 ? ' temporada' : ' temporadas') : 'Serie') : dur(i.RunTimeTicks), i.OfficialRating]
+        var meta = [i.ProductionYear, i.Type === 'Series' ? (i.ChildCount ? t('carousel.seasons', { n: i.ChildCount }) : t('carousel.series')) : dur(i.RunTimeTicks), i.OfficialRating]
           .filter(Boolean).map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('');
         if (c.rating && i.CommunityRating) meta += '<span class="nbHero-star">★ ' + i.CommunityRating.toFixed(1) + '</span>';
         var gen = (c.genres ? i.Genres || [] : []).slice(0, 3).map(function (g) { return '<span class="nbHero-chip">' + esc(g) + '</span>'; }).join('');
@@ -104,14 +126,14 @@
             '<div class="nbHero-genres">' + gen + '</div>' +
             (c.overview ? '<p class="nbHero-overview">' + esc(i.Overview) + '</p>' : '') +
             (!c.buttons ? '' : '<div class="nbHero-actions">' +
-              '<a class="nbHero-btn nbHero-btn--main" data-play="' + i.Id + '" href="' + url + '"><span class="material-icons">play_arrow</span>Ver ahora</a>' +
-              '<a class="nbHero-btn" href="' + url + '"><span class="material-icons">info_outline</span>Más info</a>' +
+              '<a class="nbHero-btn nbHero-btn--main" data-play="' + i.Id + '" href="' + url + '"><span class="material-icons">play_arrow</span>' + esc(t('carousel.play')) + '</a>' +
+              '<a class="nbHero-btn" href="' + url + '"><span class="material-icons">info_outline</span>' + esc(t('carousel.moreInfo')) + '</a>' +
             '</div>') +
           '</div></article>';
       }).join('') + '</div>' +
-      '<button class="nbHero-nav nbHero-prev" aria-label="Anterior"><span class="material-icons">chevron_left</span></button>' +
-      '<button class="nbHero-nav nbHero-next" aria-label="Siguiente"><span class="material-icons">chevron_right</span></button>' +
-      '<div class="nbHero-dots">' + items.map(function (_, n) { return '<button class="nbHero-dot' + (n === 0 ? ' is-active' : '') + '" data-i="' + n + '" aria-label="Ir a ' + (n + 1) + '"><i></i></button>'; }).join('') + '</div>';
+      '<button class="nbHero-nav nbHero-prev" aria-label="' + esc(t('carousel.previous')) + '"><span class="material-icons">chevron_left</span></button>' +
+      '<button class="nbHero-nav nbHero-next" aria-label="' + esc(t('carousel.next')) + '"><span class="material-icons">chevron_right</span></button>' +
+      '<div class="nbHero-dots">' + items.map(function (_, n) { return '<button class="nbHero-dot' + (n === 0 ? ' is-active' : '') + '" data-i="' + n + '" aria-label="' + esc(t('carousel.goToSlide', { n: n + 1 })) + '"><i></i></button>'; }).join('') + '</div>';
 
     var actual = 0, timer = null, slides = el.querySelectorAll('.nbHero-slide'), dots = el.querySelectorAll('.nbHero-dot');
     function ir(n) {
@@ -148,11 +170,17 @@
     var c = cfg();
     if (c.count <= 0) return;
     montando = true;
-    cargar(c).then(function (items) {
+    Promise.all([cargar(c), i18n()]).then(function (r) {
       montando = false;
-      if (!items.length || page.querySelector('.nbHero')) return;
-      cont.parentNode.insertBefore(construir(items, c), cont);
+      if (!r[0].length || page.querySelector('.nbHero')) return;
+      cont.parentNode.insertBefore(construir(r[0], c, r[1] ? r[1].t : sinTextos), cont);
     }).catch(function (e) { montando = false; console.warn('[NebulaHero]', e); });
+  }
+
+  // Si el usuario cambia el idioma de la interfaz, se rehace el carrusel con los textos nuevos
+  function rehacer() {
+    Array.prototype.forEach.call(document.querySelectorAll('.nbHero'), function (h) { h.remove(); });
+    montar();
   }
 
   // «Ver ahora»: al llegar a la ficha pulsa su botón de reproducir una sola vez
@@ -209,4 +237,5 @@
     (document.hidden ? function (f) { setTimeout(f, 50); } : requestAnimationFrame)(function () { pend = false; cssPanel(); if (enHome()) montar(); else autoplay(); });
   }).observe(document.documentElement, { childList: true, subtree: true });
   window.addEventListener('hashchange', function () { cssPanel(); montar(); });
+  i18n();   // ya desde el principio: textos del tema en todas las páginas y listos para el carrusel
 })();

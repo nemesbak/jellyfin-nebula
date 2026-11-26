@@ -144,6 +144,28 @@ Para equipos lentos, televisores o si simplemente no te gustan los efectos. Todo
 @import url('https://cdn.jsdelivr.net/gh/nemesbak/jellyfin-nebula@main/opciones/sin-animaciones.css');
 ```
 
+### 🌐 Idioma
+
+Los textos de Nebula (los botones del carrusel, las etiquetas **Etiquetas** y **Enlaces**, la marca **Visto** de los episodios, el aviso de favoritos vacíos) siguen siempre el idioma en que cada usuario ve Jellyfin. Para cambiarlo se usa el ajuste del propio Jellyfin: **foto de perfil → Ajustes → Visualización → Idioma** (en «Auto» usa el del navegador). Nebula cambia con él.
+
+> El **«Idioma preferido visualizado»** de *Panel de control → General* es un ajuste del servidor: la web de Jellyfin no lo usa, y Nebula tampoco.
+
+Por ahora Nebula está en **español** e **inglés**; cualquier otro idioma se ve en inglés.
+
+**Cambiar un texto** — en «CSS personalizado», debajo de las líneas `@import` (`\A` es un salto de línea):
+
+```css
+:root { --nb-txt-watched: "✓ Ya visto"; }
+```
+
+**Añadir un idioma** — los textos están en [`localization/`](localization), un archivo JSON por idioma:
+
+1. Copia `localization/en.json` como `localization/<código>.json` (`fr.json`, `pt-br.json`…) y traduce los valores. Lo que falte sale en inglés.
+2. Añádelo a `localization/languages.json`, p. ej. `"fr": "Français"`.
+3. Los plurales son así: `{ "one": "{n} temporada", "other": "{n} temporadas" }` (añade `few`/`many` si tu idioma los usa).
+
+Los idiomas nuevos necesitan el [carrusel](#-carrusel-destacado-opcional) instalado (el instalador copia la carpeta al servidor). Con el tema solo, vienen de serie español e inglés. Para ver tu traducción en tu propio servidor antes de enviarla, mira [Probar tus cambios](#-probar-tus-cambios-en-un-servidor-de-verdad).
+
 ### 📋 Ejemplo completo
 
 Así quedaría el cuadro con el tema + color coral + barra mínima:
@@ -352,10 +374,19 @@ Con tu clave de API, el instalador pega también la línea del tema en «CSS per
 <details>
 <summary>🛠️ A mano (avanzado)</summary>
 
-Copia [`nebula-home.js`](nebula-home.js) (Emby: [`emby/nebula-emby-home.js`](emby/nebula-emby-home.js)) dentro de la carpeta web (Jellyfin: `jellyfin-web` · Emby: `dashboard-ui`) y añade justo antes de `</body>` en su `index.html`:
+Dentro de la carpeta web (Jellyfin: `jellyfin-web` · Emby: `dashboard-ui`), crea una carpeta `nebula` con la misma estructura que este repo:
+
+```
+nebula/
+├── nebula-home.js            (Emby: emby/nebula-emby-home.js)
+└── localization/             (la carpeta entera: nebula-i18n.js, languages.json y los .json)
+```
+
+Después añade justo antes de `</body>` en su `index.html`:
 
 ```html
-<script defer src="nebula-home.js"></script>
+<script defer src="nebula/nebula-home.js"></script>
+<!-- Emby: <script defer src="nebula/emby/nebula-emby-home.js"></script> -->
 ```
 
 > Las actualizaciones sobrescriben `index.html`: tendrás que repetirlo tras cada una (el comando de arriba lo hace solo).
@@ -409,6 +440,34 @@ curl -fsSL https://raw.githubusercontent.com/nemesbak/jellyfin-nebula/main/insta
 ```
 
 Quita el carrusel de todos tus Jellyfin/Emby y el contenedor o la tarea que lo vigilaba. El tema (CSS) no se toca. Si lo instalaste con **Compose**, borra además el servicio `nebula` de tu archivo. Si usaste el plugin, borra allí el script.
+
+---
+
+## 🧪 Probar tus cambios en un servidor de verdad
+
+Para quien contribuye: prueba tu fork o tu rama en tu propio Jellyfin/Emby antes de abrir un pull request. Tu fork tiene que ser **público**. En los comandos, cambia `YOUR_USER` y `YOUR_BRANCH` por los tuyos.
+
+**1. Carrusel y textos.** En el servidor, como root, ejecuta el instalador de tu rama. `NEBULA_REPO` hace que descargue todos los archivos de tu rama en lugar de este repo:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/YOUR_USER/jellyfin-nebula/refs/heads/YOUR_BRANCH/install/inject-docker.sh | NEBULA_REPO=https://raw.githubusercontent.com/YOUR_USER/jellyfin-nebula/refs/heads/YOUR_BRANCH bash
+```
+
+Tiene que salir `✓ Carrusel e idiomas copiados` y `✓ Carrusel enganchado`. GitHub puede tardar unos minutos en servir lo que acabas de subir: si no copia nada, prueba otra vez al rato.
+
+> Si ya tienes instalado el carrusel de este repo con el comando de un paso, pausa antes lo que lo vuelve a poner, o en 10 minutos volverá la versión oficial: `docker stop nebula` (Docker), o `mv /etc/cron.d/nebula /root/nebula-cron.bak` (instalado directamente en el sistema).
+
+**2. Tema.** Las etiquetas de las fichas (Etiquetas, Enlaces, Visto…) salen de `nebula.css`. En *Panel de control → Personalización de apariencia → Código CSS personalizado*, apunta la línea del tema a tu commit:
+
+```css
+@import url('https://cdn.jsdelivr.net/gh/YOUR_USER/jellyfin-nebula@COMMIT/nebula.css');
+```
+
+Usa el hash completo del commit (`git rev-parse HEAD`, después de subirlo). jsDelivr no acepta nombres de rama con `/`, y con el hash siempre sirve exactamente esa versión, sin esperar a la caché.
+
+**3. Comprobar.** Recarga con **Ctrl + F5**. Para probar idiomas, cambia *Ajustes → Visualización → Idioma* y vuelve a la portada.
+
+**Deshacer:** ejecuta el mismo comando del paso 1 con `-s -- --uninstall` después de `bash`, recupera lo que pausaste (`docker start nebula`, o `mv /root/nebula-cron.bak /etc/cron.d/nebula`) y vuelve a poner la línea `@import` original.
 
 ---
 
