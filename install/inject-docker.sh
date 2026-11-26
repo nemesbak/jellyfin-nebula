@@ -17,11 +17,13 @@
 #   INTERVAL          segundos entre comprobaciones con --watch (por defecto 600)
 #   SERVER_PORT       puerto interno si no es el habitual (se detecta solo: 8096, 8097, 8920)
 #   WEB               carpeta web si no está en el sitio habitual
+#   NEBULA_REPO       de dónde bajar los archivos (para pruebas: una rama de tu fork o tu ordenador,
+#                     p. ej. http://192.168.1.20:8000); por defecto, la rama main del repo
 set -u
 ARG="${1:-${JELLYFIN_CONTAINER:-${EMBY_CONTAINER:-auto}}}"; MODO="${2:-}"
 case "$ARG" in --*) MODO="$ARG"; ARG="${JELLYFIN_CONTAINER:-${EMBY_CONTAINER:-auto}}" ;; esac
 CDN="https://cdn.jsdelivr.net/gh/nemesbak/jellyfin-nebula@main"
-REPO="https://raw.githubusercontent.com/nemesbak/jellyfin-nebula/main"
+REPO="${NEBULA_REPO:-https://raw.githubusercontent.com/nemesbak/jellyfin-nebula/main}"
 DIR="${NEBULA_DIR:-$HOME/.nebula-jellyfin}"
 WEBS="/jellyfin/jellyfin-web /usr/share/jellyfin/web /usr/lib/jellyfin/bin/jellyfin-web /app/emby/system/dashboard-ui /app/emby/dashboard-ui /opt/emby-server/system/dashboard-ui /system/dashboard-ui /usr/lib/emby-server/system/dashboard-ui /var/lib/emby/dashboard-ui"
 HAY_DOCKER=0; command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1 && HAY_DOCKER=1
@@ -56,23 +58,25 @@ bajar() { mkdir -p "$TMP/$(dirname "$1")" && curl -fsSL "$REPO/$1" -o "$TMP/$1";
 carrusel() {
   local TMP V c j
   [ -n "$WEB" ] || return 1
-  for j in aurora-home.js nebula-home.js nebula-emby-home.js; do   # versiones anteriores, sueltas en la raíz de la web
-    if x grep -q "src=\"$j?v=" "$WEB/index.html" 2>/dev/null; then
-      x sed -i "s#<script defer src=\"$j?v=[^\"]*\"></script>##" "$WEB/index.html"; x rm -f "$WEB/$j"
-    fi
-  done
+  # Primero se descarga todo: si falla, no se toca nada de lo que ya hay
   TMP="$(mktemp -d)"
   if ! { bajar "$JS_SRC" && bajar localization/nebula-i18n.js && bajar localization/languages.json; }; then
-    echo "  ✗ No se pudo descargar el carrusel (¿hay internet?)"; rm -rf "$TMP"; return 1
+    echo "  ✗ No se pudo descargar el carrusel de $REPO (¿hay internet? ¿es la dirección correcta?)"; rm -rf "$TMP"; return 1
   fi
   for c in $(grep -o '"[A-Za-z-]*"[[:space:]]*:' "$TMP/localization/languages.json" | sed 's/[":[:space:]]//g'); do
     bajar "localization/$c.json" || echo "  · Falta el idioma «$c»"
   done
   chmod -R a+rX "$TMP"
   V=$(cd "$TMP" && find . -type f | LC_ALL=C sort | xargs cat | md5sum | cut -c1-8)   # cambia si cambia cualquier archivo
+  for j in aurora-home.js nebula-home.js nebula-emby-home.js; do   # versiones anteriores, sueltas en la raíz de la web
+    if x grep -q "src=\"$j?v=" "$WEB/index.html" 2>/dev/null; then
+      x sed -i "s#<script defer src=\"$j?v=[^\"]*\"></script>##" "$WEB/index.html"; x rm -f "$WEB/$j"
+    fi
+  done
   if ! x test -f "$WEB/nebula/$JS_SRC" || ! x grep -q "nebula/$JS_SRC?v=$V" "$WEB/index.html"; then
     x rm -rf "$WEB/nebula"
-    meter "$TMP" "$WEB/nebula" && echo "  ✓ Carrusel e idiomas copiados"
+    meter "$TMP" "$WEB/nebula" || { echo "  ✗ No pude copiar el carrusel en $WEB/nebula"; rm -rf "$TMP"; return 1; }
+    echo "  ✓ Carrusel e idiomas copiados"
     x sed -i -e "s#<script defer src=\"nebula/$JS_SRC?v=[^\"]*\"></script>##" \
       -e "s#</body>#<script defer src=\"nebula/$JS_SRC?v=$V\"></script></body>#" "$WEB/index.html" && echo "  ✓ Carrusel enganchado"
   fi
@@ -133,7 +137,7 @@ destinos() {
 }
 
 una_pasada() {
-  local n=0
+  local n=0 mal=0
   for T in $(destinos); do
     if [ "$T" != host ] && ! docker inspect -f '{{.State.Running}}' "$T" 2>/dev/null | grep -q true; then
       echo "El contenedor «$T» no está en marcha"; continue
@@ -142,10 +146,10 @@ una_pasada() {
     n=$((n + 1))
     if [ "$MODO" = "--uninstall" ]; then quitar; continue; fi
     echo "▶ $SERVIDOR en $(nombre)"
-    carrusel; tema_css
+    carrusel || mal=1; tema_css
   done
   [ "$n" -gt 0 ] || echo "No he encontrado ningún Jellyfin ni Emby en este equipo."
-  [ "$n" -gt 0 ]
+  [ "$n" -gt 0 ] && [ "$mal" = 0 ]   # con algún fallo no se dice «Listo»
 }
 
 if [ "$MODO" = "--watch" ]; then
