@@ -144,6 +144,27 @@ Para equipos lentos, televisores o si simplemente no te gustan los efectos. Todo
 @import url('https://cdn.jsdelivr.net/gh/nemesbak/jellyfin-nebula@main/opciones/sin-animaciones.css');
 ```
 
+### 🌐 Idioma
+
+Los pocos textos del tema (las etiquetas **Etiquetas** y **Enlaces**, la marca **Visto** de los episodios, el aviso de favoritos vacíos) y los botones del carrusel siguen el **idioma de la interfaz** de cada usuario en Jellyfin: en español si la tiene en español y en inglés si no. No hay que configurar nada.
+
+Para cambiar un texto, o traducirlo a otro idioma, pega esto en «CSS personalizado» debajo de las líneas `@import`:
+
+```css
+/* Cambiar un texto para todos */
+:root { --nb-txt-watched: "✓ Ya visto"; }
+
+/* Traducir, solo para quien tenga la interfaz en ese idioma (aquí francés) */
+:root:lang(fr) {
+  --nb-txt-tags: "Étiquettes";
+  --nb-txt-links: "Liens";
+  --nb-txt-watched: "✓ Vu";
+  --nb-txt-no-favorites: "Pas encore de favoris\A Appuyez sur ♥ sur un film ou une série pour l'ajouter ici";
+}
+```
+
+> `\A` es un salto de línea. Los textos del carrusel están en `TXT`, al principio de `nebula-home.js` (y de `emby/nebula-emby-home.js`); `--nb-hero-lang` fuerza su idioma (ver *Personalizar el carrusel* más abajo).
+
 ### 📋 Ejemplo completo
 
 Así quedaría el cuadro con el tema + color coral + barra mínima:
@@ -378,6 +399,7 @@ Se ajusta desde el **mismo cuadro de «Código CSS personalizado»**, debajo de 
 | `--nb-hero-overview` / `-genres` / `-rating` | Mostrar sinopsis / géneros / nota (`1` sí, `0` no) | `1` |
 | `--nb-hero-buttons` | Botones «Ver ahora» y «Más info» | `1` |
 | `--nb-hero-play` | `1` = «Ver ahora» reproduce · `0` = solo abre la ficha | `1` |
+| `--nb-hero-lang` | Idioma de los textos del carrusel: `en` · `es` | el de la interfaz |
 | `--nb-hero-height` | Alto en ordenador | `min(68vh, 640px)` |
 | `--nb-hero-height-mobile` | Alto en móvil | `62vh` |
 

@@ -146,6 +146,27 @@ For slow devices, TVs, or if you just don't like the effects. Everything appears
 @import url('https://cdn.jsdelivr.net/gh/nemesbak/jellyfin-nebula@main/opciones/sin-animaciones.css');
 ```
 
+### 🌐 Language
+
+The theme's few texts (the **Tags** and **Links** labels, the **Watched** badge on episodes, the empty-favorites message) and the carousel buttons follow each user's **display language** in Jellyfin: English by default, Spanish when the interface is in Spanish. Nothing to set up.
+
+To change a text, or translate it into another language, paste this in "Custom CSS" below the `@import` lines:
+
+```css
+/* Change a text for everyone */
+:root { --nb-txt-watched: "✓ Seen"; }
+
+/* Translate, only for users with the interface in that language (here French) */
+:root:lang(fr) {
+  --nb-txt-tags: "Étiquettes";
+  --nb-txt-links: "Liens";
+  --nb-txt-watched: "✓ Vu";
+  --nb-txt-no-favorites: "Pas encore de favoris\A Appuyez sur ♥ sur un film ou une série pour l'ajouter ici";
+}
+```
+
+> `\A` is a line break. The carousel texts live in `TXT` at the top of `nebula-home.js` (and `emby/nebula-emby-home.js`); `--nb-hero-lang` forces their language (see *Customizing the carousel* below).
+
 ### 📋 Full example
 
 This is what the box would look like with the theme + coral accent + minimal bar:
@@ -382,6 +403,7 @@ Configured from the **same "Custom CSS code" box**, below the theme lines. Only 
 | `--nb-hero-overview` / `-genres` / `-rating` | Show overview / genres / rating (`1` yes, `0` no) | `1` |
 | `--nb-hero-buttons` | "Play now" and "More info" buttons | `1` |
 | `--nb-hero-play` | `1` = "Play now" starts playback · `0` = just opens the item page | `1` |
+| `--nb-hero-lang` | Language of the carousel texts: `en` · `es` | the display language |
 | `--nb-hero-height` | Height on desktop | `min(68vh, 640px)` |
 | `--nb-hero-height-mobile` | Height on mobile | `62vh` |
 

@@ -5,9 +5,20 @@
   'use strict';
   var DEF = {
     count: 8, interval: 8, source: 'recent', types: 'Movie,Series', library: '', days: 120,
-    unwatched: 1, logo: 1, overview: 1, genres: 1, rating: 1, buttons: 1, play: 1
+    unwatched: 1, logo: 1, overview: 1, genres: 1, rating: 1, buttons: 1, play: 1, lang: ''
   };
   var cache = null, cacheKey = null, cacheAt = 0;
+
+  /* Textos del carrusel. Sin «lang» siguen el idioma de la interfaz (<html lang="…">) o, si no lo hay, el del navegador.
+     Para añadir un idioma, copia el bloque «en» con su código (fr, de, pt-br…) y tradúcelo. */
+  var TXT = {
+    en: { play: 'Play now', info: 'More info', prev: 'Previous', next: 'Next', goTo: 'Go to slide {n}', season: '{n} season', seasons: '{n} seasons', series: 'Series' },
+    es: { play: 'Ver ahora', info: 'Más info', prev: 'Anterior', next: 'Siguiente', goTo: 'Ir a {n}', season: '{n} temporada', seasons: '{n} temporadas', series: 'Serie' }
+  };
+  function textos(c) {
+    var l = String(c.lang || document.documentElement.lang || navigator.language || 'en').toLowerCase(), T = TXT[l] || TXT[l.split('-')[0]] || TXT.en;
+    return function (k, n) { return (T[k] || TXT.en[k]).replace('{n}', n); };
+  }
 
   function cfg() {
     var c = {}, st = getComputedStyle(document.documentElement), ext = window.NebulaHero || {};
@@ -78,12 +89,12 @@
   function icono(n) { return '<i class="md-icon nbHero-ico">' + n + '</i>'; }
 
   function construir(items, c) {
-    var sid = api().serverId();
+    var sid = api().serverId(), t = textos(c);
     var el = document.createElement('section');
     el.className = 'nbHero nbHero--emby';
     el.innerHTML =
       '<div class="nbHero-slides">' + items.map(function (i, n) {
-        var meta = [i.ProductionYear, i.Type === 'Series' ? (i.ChildCount ? i.ChildCount + (i.ChildCount === 1 ? ' temporada' : ' temporadas') : 'Serie') : dur(i.RunTimeTicks), i.OfficialRating]
+        var meta = [i.ProductionYear, i.Type === 'Series' ? (i.ChildCount ? t(i.ChildCount === 1 ? 'season' : 'seasons', i.ChildCount) : t('series')) : dur(i.RunTimeTicks), i.OfficialRating]
           .filter(Boolean).map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('');
         if (c.rating && i.CommunityRating) meta += '<span class="nbHero-star">★ ' + i.CommunityRating.toFixed(1) + '</span>';
         var gen = (c.genres ? i.Genres || [] : []).slice(0, 3).map(function (g) { return '<span class="nbHero-chip">' + esc(g) + '</span>'; }).join('');
@@ -97,14 +108,14 @@
             '<div class="nbHero-genres">' + gen + '</div>' +
             (c.overview ? '<p class="nbHero-overview">' + esc(i.Overview) + '</p>' : '') +
             (!c.buttons ? '' : '<div class="nbHero-actions">' +
-              '<a class="nbHero-btn nbHero-btn--main" data-play="' + i.Id + '" href="' + url + '">' + icono('play_arrow') + 'Ver ahora</a>' +
-              '<a class="nbHero-btn" href="' + url + '">' + icono('info') + 'Más info</a>' +
+              '<a class="nbHero-btn nbHero-btn--main" data-play="' + i.Id + '" href="' + url + '">' + icono('play_arrow') + esc(t('play')) + '</a>' +
+              '<a class="nbHero-btn" href="' + url + '">' + icono('info') + esc(t('info')) + '</a>' +
             '</div>') +
           '</div></article>';
       }).join('') + '</div>' +
-      '<button class="nbHero-nav nbHero-prev" aria-label="Anterior">' + icono('chevron_left') + '</button>' +
-      '<button class="nbHero-nav nbHero-next" aria-label="Siguiente">' + icono('chevron_right') + '</button>' +
-      '<div class="nbHero-dots">' + items.map(function (_, n) { return '<button class="nbHero-dot' + (n === 0 ? ' is-active' : '') + '" data-i="' + n + '" aria-label="Ir a ' + (n + 1) + '"><i></i></button>'; }).join('') + '</div>';
+      '<button class="nbHero-nav nbHero-prev" aria-label="' + esc(t('prev')) + '">' + icono('chevron_left') + '</button>' +
+      '<button class="nbHero-nav nbHero-next" aria-label="' + esc(t('next')) + '">' + icono('chevron_right') + '</button>' +
+      '<div class="nbHero-dots">' + items.map(function (_, n) { return '<button class="nbHero-dot' + (n === 0 ? ' is-active' : '') + '" data-i="' + n + '" aria-label="' + esc(t('goTo', n + 1)) + '"><i></i></button>'; }).join('') + '</div>';
 
     var actual = 0, timer = null, slides = el.querySelectorAll('.nbHero-slide'), dots = el.querySelectorAll('.nbHero-dot');
     function ir(n) {
