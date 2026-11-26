@@ -166,7 +166,7 @@ Nebula currently comes in **English** and **Spanish**; any other language shows 
 2. Add it to `localization/languages.json`, e.g. `"fr": "Français"`.
 3. Plurals look like `{ "one": "{n} season", "other": "{n} seasons" }` (add `few`/`many` if your language uses them).
 
-New languages need the [carousel](#-featured-carousel-optional) installed (the installer copies the folder to your server). With the theme alone, only English and Spanish are built in.
+New languages need the [carousel](#-featured-carousel-optional) installed (the installer copies the folder to your server). With the theme alone, only English and Spanish are built in. To check your translation on your own server before sending it, see [Trying your own changes](#-trying-your-own-changes-on-a-real-server).
 
 ### 📋 Full example
 
@@ -378,10 +378,19 @@ With your API key, the installer also pastes the theme line into "Custom CSS" (o
 <details>
 <summary>🛠️ Manually (advanced)</summary>
 
-Copy [`nebula-home.js`](nebula-home.js) (Emby: [`emby/nebula-emby-home.js`](emby/nebula-emby-home.js)) into the web folder (Jellyfin: `jellyfin-web` · Emby: `dashboard-ui`) and add this right before `</body>` in its `index.html`:
+In the web folder (Jellyfin: `jellyfin-web` · Emby: `dashboard-ui`), create a `nebula` folder with the same layout as this repo:
+
+```
+nebula/
+├── nebula-home.js            (Emby: emby/nebula-emby-home.js)
+└── localization/             (the whole folder: nebula-i18n.js, languages.json and the .json files)
+```
+
+Then add this right before `</body>` in its `index.html`:
 
 ```html
-<script defer src="nebula-home.js"></script>
+<script defer src="nebula/nebula-home.js"></script>
+<!-- Emby: <script defer src="nebula/emby/nebula-emby-home.js"></script> -->
 ```
 
 > Updates overwrite `index.html`: you'll have to redo this after each one (the command above does it for you).
@@ -435,6 +444,34 @@ curl -fsSL https://raw.githubusercontent.com/nemesbak/jellyfin-nebula/main/insta
 ```
 
 It removes the carousel from all your Jellyfin/Emby servers, plus the container or task that was watching it. The theme (CSS) is left untouched. If you installed it with **Compose**, also delete the `nebula` service from your file. If you used the plugin, delete the script there.
+
+---
+
+## 🧪 Trying your own changes on a real server
+
+For contributors: run your fork or branch on your own Jellyfin/Emby before opening a pull request. Your fork has to be **public**. In the commands, replace `YOUR_USER` and `YOUR_BRANCH` with yours.
+
+**1. Carousel and texts.** On the server, as root, run the installer from your branch. `NEBULA_REPO` makes it download every file from your branch instead of from this repo:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/YOUR_USER/jellyfin-nebula/refs/heads/YOUR_BRANCH/install/inject-docker.sh | NEBULA_REPO=https://raw.githubusercontent.com/YOUR_USER/jellyfin-nebula/refs/heads/YOUR_BRANCH bash
+```
+
+You should see `✓ Carrusel e idiomas copiados` and `✓ Carrusel enganchado`. GitHub can take a few minutes to serve a fresh push, so if nothing is copied, try again shortly.
+
+> If this repo's carousel is already installed with the one-command installer, pause what re-applies it first, or it puts the official version back within 10 minutes: `docker stop nebula` (Docker), or `mv /etc/cron.d/nebula /root/nebula-cron.bak` (installed directly on the system).
+
+**2. Theme.** The labels on item pages (Tags, Links, Watched…) come from `nebula.css`. In *Dashboard → Branding → Custom CSS code*, point the theme line at your commit:
+
+```css
+@import url('https://cdn.jsdelivr.net/gh/YOUR_USER/jellyfin-nebula@COMMIT/nebula.css');
+```
+
+Use the full commit hash (`git rev-parse HEAD`, after pushing). jsDelivr doesn't accept branch names with a `/`, and a hash always serves exactly that version, with no cache delay.
+
+**3. Check.** Reload with **Ctrl + F5**. To test languages, switch *Settings → Display → Display language* and go back to Home.
+
+**Undo:** run the same command as in step 1 with `-s -- --uninstall` after `bash`, bring back what you paused (`docker start nebula`, or `mv /root/nebula-cron.bak /etc/cron.d/nebula`), and restore the original `@import` line.
 
 ---
 
