@@ -148,23 +148,17 @@ For slow devices, TVs, or if you just don't like the effects. Everything appears
 
 ### 🌐 Language
 
-Nebula's texts (the carousel buttons, the **Tags** and **Links** labels, the **Watched** badge on episodes, the empty-favorites message) come in **English** and **Spanish**, and follow each user's **display language** in Jellyfin/Emby on their own.
+Nebula's texts (the carousel buttons, the **Tags** and **Links** labels, the **Watched** badge on episodes, the empty-favorites message) always follow the language Jellyfin is shown in, for each user. To change it, use Jellyfin's own setting: **profile picture → Settings → Display → Display language** (on "Auto" it uses the browser's language). Nebula switches along with it.
 
-With the [carousel](#-featured-carousel-optional) installed there's also a **language button** (文A) in the top bar, next to Search. Each person can pick *Automatic* (follow Jellyfin) or a specific language; the choice is saved in that browser. Without the carousel (theme only) there's no button, but the texts still follow the display language.
+> The **"Preferred display language"** under *Dashboard → General* is a server setting: Jellyfin's web interface doesn't use it, and neither does Nebula.
 
-**A default for everyone** — in "Custom CSS", below the `@import` lines (each user can still change it with the button):
+Nebula currently comes in **English** and **Spanish**; any other language shows in English.
 
-```css
-:root { --nb-lang: en; }
-```
-
-**Change a single text** — also in "Custom CSS" (`\A` is a line break):
+**Change a single text** — in "Custom CSS", below the `@import` lines (`\A` is a line break):
 
 ```css
 :root { --nb-txt-watched: "✓ Seen"; }
 ```
-
-**Hide the language button:** `.nbLangBtn { display: none !important; }`
 
 **Add a language** — the texts live in [`localization/`](localization), one JSON file per language:
 
@@ -172,7 +166,7 @@ With the [carousel](#-featured-carousel-optional) installed there's also a **lan
 2. Add it to `localization/languages.json`, e.g. `"fr": "Français"`.
 3. Plurals look like `{ "one": "{n} season", "other": "{n} seasons" }` (add `few`/`many` if your language uses them).
 
-The installer copies the whole folder to your server along with the carousel. The theme CSS alone only knows English and Spanish.
+New languages need the [carousel](#-featured-carousel-optional) installed (the installer copies the folder to your server). With the theme alone, only English and Spanish are built in.
 
 ### 📋 Full example
 

@@ -14,7 +14,7 @@
 }
 
 /* Textos del tema. Los de verdad están en localization/<idioma>.json (sección «theme»): con el carrusel instalado,
-   localization/nebula-i18n.js los pone aquí en el idioma elegido con el botón de la barra.
+   localization/nebula-i18n.js los pone aquí en el idioma de la interfaz de cada usuario (sea cual sea).
    Esto es solo lo que se ve SIN ese script (solo CSS, app de iOS): inglés, o español si la interfaz está en español.
    Todo con :where() (especificidad 0) para que ganen el script y el «CSS personalizado»:  :root { --nb-txt-watched: "✓ Seen"; } */
 :where(:root) {

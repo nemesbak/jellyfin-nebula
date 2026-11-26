@@ -21,7 +21,7 @@
   };
   var cache = null, cacheKey = null, cacheAt = 0;
 
-  /* Textos: localization/<idioma>.json, a través de localization/nebula-i18n.js (botón de idioma incluido).
+  /* Textos: localization/<idioma>.json, a través de localization/nebula-i18n.js, en el idioma de la interfaz.
      Se busca junto a este archivo; si no está (instalaciones antiguas), en el CDN. */
   var YO = document.currentScript && document.currentScript.src;
   var I18N = 'localization/nebula-i18n.js', CDN = 'https://cdn.jsdelivr.net/gh/nemesbak/jellyfin-nebula@main/';
@@ -177,7 +177,7 @@
     }).catch(function (e) { montando = false; console.warn('[NebulaHero]', e); });
   }
 
-  // Al cambiar de idioma con el botón de la barra, se rehace el carrusel con los textos nuevos
+  // Si el usuario cambia el idioma de la interfaz, se rehace el carrusel con los textos nuevos
   function rehacer() {
     Array.prototype.forEach.call(document.querySelectorAll('.nbHero'), function (h) { h.remove(); });
     montar();
@@ -237,5 +237,5 @@
     (document.hidden ? function (f) { setTimeout(f, 50); } : requestAnimationFrame)(function () { pend = false; cssPanel(); if (enHome()) montar(); else autoplay(); });
   }).observe(document.documentElement, { childList: true, subtree: true });
   window.addEventListener('hashchange', function () { cssPanel(); montar(); });
-  i18n();   // ya desde el principio: textos del tema y botón de idioma en todas las páginas
+  i18n();   // ya desde el principio: textos del tema en todas las páginas y listos para el carrusel
 })();

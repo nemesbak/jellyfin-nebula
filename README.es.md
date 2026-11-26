@@ -146,23 +146,17 @@ Para equipos lentos, televisores o si simplemente no te gustan los efectos. Todo
 
 ### 🌐 Idioma
 
-Los textos de Nebula (los botones del carrusel, las etiquetas **Etiquetas** y **Enlaces**, la marca **Visto** de los episodios, el aviso de favoritos vacíos) están en **español** e **inglés**, y siguen solos el **idioma de la interfaz** de cada usuario en Jellyfin/Emby.
+Los textos de Nebula (los botones del carrusel, las etiquetas **Etiquetas** y **Enlaces**, la marca **Visto** de los episodios, el aviso de favoritos vacíos) siguen siempre el idioma en que cada usuario ve Jellyfin. Para cambiarlo se usa el ajuste del propio Jellyfin: **foto de perfil → Ajustes → Visualización → Idioma** (en «Auto» usa el del navegador). Nebula cambia con él.
 
-Con el [carrusel](#-carrusel-destacado-opcional) instalado hay además un **botón de idioma** (文A) en la barra superior, junto a la búsqueda. Cada persona puede elegir *Automático* (el de Jellyfin) o un idioma concreto; la elección se guarda en ese navegador. Sin el carrusel (solo el tema) no hay botón, pero los textos siguen igualmente el idioma de la interfaz.
+> El **«Idioma preferido visualizado»** de *Panel de control → General* es un ajuste del servidor: la web de Jellyfin no lo usa, y Nebula tampoco.
 
-**Un idioma por defecto para todos** — en «CSS personalizado», debajo de las líneas `@import` (cada uno puede cambiarlo con el botón):
+Por ahora Nebula está en **español** e **inglés**; cualquier otro idioma se ve en inglés.
 
-```css
-:root { --nb-lang: es; }
-```
-
-**Cambiar un texto** — también en «CSS personalizado» (`\A` es un salto de línea):
+**Cambiar un texto** — en «CSS personalizado», debajo de las líneas `@import` (`\A` es un salto de línea):
 
 ```css
 :root { --nb-txt-watched: "✓ Ya visto"; }
 ```
-
-**Ocultar el botón de idioma:** `.nbLangBtn { display: none !important; }`
 
 **Añadir un idioma** — los textos están en [`localization/`](localization), un archivo JSON por idioma:
 
@@ -170,7 +164,7 @@ Con el [carrusel](#-carrusel-destacado-opcional) instalado hay además un **bot�
 2. Añádelo a `localization/languages.json`, p. ej. `"fr": "Français"`.
 3. Los plurales son así: `{ "one": "{n} temporada", "other": "{n} temporadas" }` (añade `few`/`many` si tu idioma los usa).
 
-El instalador copia la carpeta entera al servidor junto con el carrusel. El CSS del tema por sí solo solo sabe español e inglés.
+Los idiomas nuevos necesitan el [carrusel](#-carrusel-destacado-opcional) instalado (el instalador copia la carpeta al servidor). Con el tema solo, vienen de serie español e inglés.
 
 ### 📋 Ejemplo completo
 
