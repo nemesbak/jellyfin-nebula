@@ -378,6 +378,7 @@ Se ajusta desde el **mismo cuadro de «Código CSS personalizado»**, debajo de 
 | `--nb-hero-overview` / `-genres` / `-rating` | Mostrar sinopsis / géneros / nota (`1` sí, `0` no) | `1` |
 | `--nb-hero-buttons` | Botones «Ver ahora» y «Más info» | `1` |
 | `--nb-hero-play` | `1` = «Ver ahora» reproduce · `0` = solo abre la ficha | `1` |
+| `--nb-hero-lang` | Idioma de los textos (`en`, `es`, `it`, `fr`, `de`, `pt`). Vacío = el del usuario; si no existe, inglés | vacío |
 | `--nb-hero-height` | Alto en ordenador | `min(68vh, 640px)` |
 | `--nb-hero-height-mobile` | Alto en móvil | `62vh` |
 

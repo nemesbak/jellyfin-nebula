@@ -4,10 +4,66 @@
 (function () {
   'use strict';
   var DEF = {
-    count: 8, interval: 8, source: 'recent', types: 'Movie,Series', library: '', days: 120,
+    lang: '', count: 8, interval: 8, source: 'recent', types: 'Movie,Series', library: '', days: 120,
     unwatched: 1, logo: 1, overview: 1, genres: 1, rating: 1, buttons: 1, play: 1
   };
   var cache = null, cacheKey = null, cacheAt = 0;
+
+  /* Textos del carrusel: se generan desde lang/*.json con «node lang/build.js». */
+  /* LANG:BEGIN (generado por lang/build.js, no editar a mano) */
+  var T = {
+    "en": {"watch":"Watch now","info":"More info","series":"Series","prev":"Previous","next":"Next","go":"Go to","season_one":"season","season_other":"seasons"},
+    "ar": {"watch":"شاهد الآن","info":"المزيد من المعلومات","series":"مسلسل","prev":"السابق","next":"التالي","go":"اذهب إلى","season_one":"موسم","season_two":"موسمان","season_few":"مواسم","season_many":"موسمًا","season_other":"موسم"},
+    "ca": {"watch":"Mira-ho ara","info":"Més informació","series":"Sèrie","prev":"Anterior","next":"Següent","go":"Ves a","season_one":"temporada","season_other":"temporades"},
+    "cs": {"watch":"Přehrát","info":"Více info","series":"Seriál","prev":"Předchozí","next":"Další","go":"Přejít na","season_one":"sezóna","season_few":"sezóny","season_many":"sezóny","season_other":"sezón"},
+    "da": {"watch":"Se nu","info":"Mere info","series":"Serie","prev":"Forrige","next":"Næste","go":"Gå til","season_one":"sæson","season_other":"sæsoner"},
+    "de": {"watch":"Jetzt ansehen","info":"Mehr Infos","series":"Serie","prev":"Zurück","next":"Weiter","go":"Gehe zu","season_one":"Staffel","season_other":"Staffeln"},
+    "el": {"watch":"Δες τώρα","info":"Περισσότερα","series":"Σειρά","prev":"Προηγούμενο","next":"Επόμενο","go":"Μετάβαση σε","season_one":"σεζόν","season_other":"σεζόν"},
+    "es": {"watch":"Ver ahora","info":"Más info","series":"Serie","prev":"Anterior","next":"Siguiente","go":"Ir a","season_one":"temporada","season_other":"temporadas"},
+    "fi": {"watch":"Katso nyt","info":"Lisätietoja","series":"Sarja","prev":"Edellinen","next":"Seuraava","go":"Siirry","season_one":"kausi","season_other":"kautta"},
+    "fr": {"watch":"Regarder","info":"Plus d'infos","series":"Série","prev":"Précédent","next":"Suivant","go":"Aller à","season_one":"saison","season_other":"saisons"},
+    "hu": {"watch":"Megnézem","info":"További infó","series":"Sorozat","prev":"Előző","next":"Következő","go":"Ugrás ide","season_one":"évad","season_other":"évad"},
+    "it": {"watch":"Guarda ora","info":"Maggiori info","series":"Serie","prev":"Precedente","next":"Successivo","go":"Vai a","season_one":"stagione","season_other":"stagioni"},
+    "ja": {"watch":"今すぐ見る","info":"詳細","series":"シリーズ","prev":"前へ","next":"次へ","go":"移動","season_other":"シーズン"},
+    "ko": {"watch":"지금 보기","info":"상세 정보","series":"시리즈","prev":"이전","next":"다음","go":"이동","season_other":"시즌"},
+    "nb": {"watch":"Se nå","info":"Mer info","series":"Serie","prev":"Forrige","next":"Neste","go":"Gå til","season_one":"sesong","season_other":"sesonger"},
+    "nl": {"watch":"Nu kijken","info":"Meer info","series":"Serie","prev":"Vorige","next":"Volgende","go":"Ga naar","season_one":"seizoen","season_other":"seizoenen"},
+    "pl": {"watch":"Oglądaj","info":"Więcej info","series":"Serial","prev":"Poprzedni","next":"Następny","go":"Przejdź do","season_one":"sezon","season_few":"sezony","season_many":"sezonów","season_other":"sezonu"},
+    "pt-br": {"watch":"Assistir agora","info":"Mais info","series":"Série","prev":"Anterior","next":"Próximo","go":"Ir para","season_one":"temporada","season_other":"temporadas"},
+    "pt": {"watch":"Ver agora","info":"Mais info","series":"Série","prev":"Anterior","next":"Seguinte","go":"Ir para","season_one":"temporada","season_other":"temporadas"},
+    "ro": {"watch":"Vizionează","info":"Mai multe info","series":"Serial","prev":"Anterior","next":"Următorul","go":"Mergi la","season_one":"sezon","season_few":"sezoane","season_other":"de sezoane"},
+    "ru": {"watch":"Смотреть","info":"Подробнее","series":"Сериал","prev":"Назад","next":"Вперёд","go":"Перейти к","season_one":"сезон","season_few":"сезона","season_many":"сезонов","season_other":"сезона"},
+    "sv": {"watch":"Titta nu","info":"Mer info","series":"Serie","prev":"Föregående","next":"Nästa","go":"Gå till","season_one":"säsong","season_other":"säsonger"},
+    "tr": {"watch":"Şimdi izle","info":"Daha fazla bilgi","series":"Dizi","prev":"Önceki","next":"Sonraki","go":"Git","season_one":"sezon","season_other":"sezon"},
+    "uk": {"watch":"Дивитися","info":"Докладніше","series":"Серіал","prev":"Назад","next":"Далі","go":"Перейти до","season_one":"сезон","season_few":"сезони","season_many":"сезонів","season_other":"сезону"},
+    "zh-cn": {"watch":"立即观看","info":"更多信息","series":"剧集","prev":"上一个","next":"下一个","go":"前往","season_other":"季"},
+    "zh-tw": {"watch":"立即觀看","info":"更多資訊","series":"影集","prev":"上一個","next":"下一個","go":"前往","season_other":"季"}
+  };
+  /* LANG:END */
+  var ALIAS = { 'zh-hk': 'zh-tw', 'zh-mo': 'zh-tw', 'zh-sg': 'zh-cn', nn: 'nb', no: 'nb' };
+  function conIngles(k) {
+    var r = {};
+    Object.keys(T.en).forEach(function (x) { r[x] = T.en[x]; });
+    Object.keys(T[k]).forEach(function (x) { r[x] = T[k][x]; });
+    r.code = k;
+    return r;
+  }
+  function idioma(c) {
+    var cand = [c && c.lang];
+    try { var uid = window.ApiClient && window.ApiClient.getCurrentUserId && window.ApiClient.getCurrentUserId(); if (uid) cand.push(localStorage.getItem(uid + '-language')); } catch (e) {}
+    cand.push(document.documentElement.lang, navigator.language);
+    for (var n = 0; n < cand.length; n++) {
+      var full = String(cand[n] || '').toLowerCase().replace('_', '-'), base = full.split('-')[0];
+      var k = [full, ALIAS[full], base, ALIAS[base]].filter(function (x) { return x && T[x]; })[0];
+      if (k) return conIngles(k);
+    }
+    return conIngles('en');
+  }
+  function temporadas(L, n) {
+    var cat = 'other';
+    try { cat = new Intl.PluralRules(L.code).select(n); } catch (e) {}
+    return n + ' ' + (L['season_' + cat] || L.season_other);
+  }
 
   function cfg() {
     var c = {}, st = getComputedStyle(document.documentElement), ext = window.NebulaHero || {};
@@ -78,12 +134,12 @@
   function icono(n) { return '<i class="md-icon nbHero-ico">' + n + '</i>'; }
 
   function construir(items, c) {
-    var sid = api().serverId();
+    var sid = api().serverId(), L = idioma(c);
     var el = document.createElement('section');
     el.className = 'nbHero nbHero--emby';
     el.innerHTML =
       '<div class="nbHero-slides">' + items.map(function (i, n) {
-        var meta = [i.ProductionYear, i.Type === 'Series' ? (i.ChildCount ? i.ChildCount + (i.ChildCount === 1 ? ' temporada' : ' temporadas') : 'Serie') : dur(i.RunTimeTicks), i.OfficialRating]
+        var meta = [i.ProductionYear, i.Type === 'Series' ? (i.ChildCount ? temporadas(L, i.ChildCount) : L.series) : dur(i.RunTimeTicks), i.OfficialRating]
           .filter(Boolean).map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('');
         if (c.rating && i.CommunityRating) meta += '<span class="nbHero-star">★ ' + i.CommunityRating.toFixed(1) + '</span>';
         var gen = (c.genres ? i.Genres || [] : []).slice(0, 3).map(function (g) { return '<span class="nbHero-chip">' + esc(g) + '</span>'; }).join('');
@@ -97,14 +153,14 @@
             '<div class="nbHero-genres">' + gen + '</div>' +
             (c.overview ? '<p class="nbHero-overview">' + esc(i.Overview) + '</p>' : '') +
             (!c.buttons ? '' : '<div class="nbHero-actions">' +
-              '<a class="nbHero-btn nbHero-btn--main" data-play="' + i.Id + '" href="' + url + '">' + icono('play_arrow') + 'Ver ahora</a>' +
-              '<a class="nbHero-btn" href="' + url + '">' + icono('info') + 'Más info</a>' +
+              '<a class="nbHero-btn nbHero-btn--main" data-play="' + i.Id + '" href="' + url + '">' + icono('play_arrow') + L.watch + '</a>' +
+              '<a class="nbHero-btn" href="' + url + '">' + icono('info') + L.info + '</a>' +
             '</div>') +
           '</div></article>';
       }).join('') + '</div>' +
-      '<button class="nbHero-nav nbHero-prev" aria-label="Anterior">' + icono('chevron_left') + '</button>' +
-      '<button class="nbHero-nav nbHero-next" aria-label="Siguiente">' + icono('chevron_right') + '</button>' +
-      '<div class="nbHero-dots">' + items.map(function (_, n) { return '<button class="nbHero-dot' + (n === 0 ? ' is-active' : '') + '" data-i="' + n + '" aria-label="Ir a ' + (n + 1) + '"><i></i></button>'; }).join('') + '</div>';
+      '<button class="nbHero-nav nbHero-prev" aria-label="' + L.prev + '">' + icono('chevron_left') + '</button>' +
+      '<button class="nbHero-nav nbHero-next" aria-label="' + L.next + '">' + icono('chevron_right') + '</button>' +
+      '<div class="nbHero-dots">' + items.map(function (_, n) { return '<button class="nbHero-dot' + (n === 0 ? ' is-active' : '') + '" data-i="' + n + '" aria-label="' + L.go + ' ' + (n + 1) + '"><i></i></button>'; }).join('') + '</div>';
 
     var actual = 0, timer = null, slides = el.querySelectorAll('.nbHero-slide'), dots = el.querySelectorAll('.nbHero-dot');
     function ir(n) {

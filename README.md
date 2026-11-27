@@ -382,6 +382,7 @@ Configured from the **same "Custom CSS code" box**, below the theme lines. Only 
 | `--nb-hero-overview` / `-genres` / `-rating` | Show overview / genres / rating (`1` yes, `0` no) | `1` |
 | `--nb-hero-buttons` | "Play now" and "More info" buttons | `1` |
 | `--nb-hero-play` | `1` = "Play now" starts playback · `0` = just opens the item page | `1` |
+| `--nb-hero-lang` | Text language (`en`, `es`, `it`, `fr`, `de`, `pt`). Empty = the user's language; falls back to English | empty |
 | `--nb-hero-height` | Height on desktop | `min(68vh, 640px)` |
 | `--nb-hero-height-mobile` | Height on mobile | `62vh` |
 
