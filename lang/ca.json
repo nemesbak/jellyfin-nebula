@@ -6,5 +6,9 @@
   "next": "Següent",
   "go": "Ves a",
   "season_one": "temporada",
-  "season_other": "temporades"
+  "season_other": "temporades",
+  "tags": "Etiquetes",
+  "links": "Enllaços",
+  "watched": "✓ Vist",
+  "no_favs": "Encara no tens preferits\nToca el ♥ a qualsevol pel·lícula o sèrie i apareixerà aquí"
 }

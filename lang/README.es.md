@@ -38,6 +38,8 @@ Nombre del archivo = código del idioma como lo usa Jellyfin (`it.json`, `pt-BR.
 | `series` | Se muestra en lugar del número de temporadas cuando no se conoce |
 | `prev`, `next` | Botones de flecha (lectores de pantalla) |
 | `go` | Puntos bajo el carrusel, «Ir a 3» (lectores de pantalla) |
+| `tags`, `links`, `watched`, `no_favs` | Textos que usa la hoja de estilos: etiquetas «Etiquetas» y «Enlaces» de la ficha, la marca «✓ Visto» de los episodios y el mensaje de favoritos vacíos (`
+` separa las dos líneas) |
 | `season_<categoría>` | Palabra tras el número: «**3** temporadas». El número lo pone el código |
 
 ### Plurales

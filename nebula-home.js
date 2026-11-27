@@ -2,48 +2,28 @@
    Se carga desde index.html (ver install/inject-docker.sh). Solo lee la API con la sesión del usuario. */
 (function () {
   'use strict';
-  /* La app de Jellyfin para iOS (WKWebView) puede entrar en un bucle de recargas con el carrusel: en iOS no se carga. */
-  if (/iPhone|iPad|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1)) return;
-  /* Ajustes: se leen de variables CSS (ponlas en «CSS personalizado», ver README) o de window.NebulaHero.
-     Ejemplo:  :root { --nb-hero-count: 10; --nb-hero-source: toprated; --nb-hero-library: "Películas"; } */
-  var DEF = {
-    lang: '',                 // idioma de los textos (es, en, it...); vacío = el del usuario
-    count: 8,                 // títulos en el carrusel (0 = sin carrusel)
-    interval: 8,              // segundos entre diapositivas (0 = sin autoavance)
-    source: 'recent',         // recent | random | toprated | favorites
-    types: 'Movie,Series',    // Movie, Series o ambos
-    library: '',              // nombre(s) de biblioteca separados por coma; vacío = todas
-    days: 120,                // solo añadidos en los últimos N días (source=recent); 0 = sin límite
-    unwatched: 1,             // 1 = solo no vistos
-    logo: 1,                  // 1 = solo títulos con logo; 0 = también sin logo (muestra el nombre)
-    overview: 1, genres: 1, rating: 1,
-    buttons: 1,               // botones «Ver ahora» / «Más info»
-    play: 1                   // 1 = «Ver ahora» reproduce directamente
-  };
-  var cache = null, cacheKey = null, cacheAt = 0;
-
   /* Textos del carrusel: se generan desde lang/*.json con «node lang/build.js». */
   /* LANG:BEGIN (generado por lang/build.js, no editar a mano) */
   var T = {
-    "en": {"watch":"Watch now","info":"More info","series":"Series","prev":"Previous","next":"Next","go":"Go to","season_one":"season","season_other":"seasons"},
+    "en": {"watch":"Watch now","info":"More info","series":"Series","prev":"Previous","next":"Next","go":"Go to","season_one":"season","season_other":"seasons","tags":"Tags","links":"Links","watched":"✓ Watched","no_favs":"You have no favourites yet\nTap the ♥ on any movie or series and it will appear here"},
     "ar": {"watch":"شاهد الآن","info":"المزيد من المعلومات","series":"مسلسل","prev":"السابق","next":"التالي","go":"اذهب إلى","season_one":"موسم","season_two":"موسمان","season_few":"مواسم","season_many":"موسمًا","season_other":"موسم"},
-    "ca": {"watch":"Mira-ho ara","info":"Més informació","series":"Sèrie","prev":"Anterior","next":"Següent","go":"Ves a","season_one":"temporada","season_other":"temporades"},
+    "ca": {"watch":"Mira-ho ara","info":"Més informació","series":"Sèrie","prev":"Anterior","next":"Següent","go":"Ves a","season_one":"temporada","season_other":"temporades","tags":"Etiquetes","links":"Enllaços","watched":"✓ Vist","no_favs":"Encara no tens preferits\nToca el ♥ a qualsevol pel·lícula o sèrie i apareixerà aquí"},
     "cs": {"watch":"Přehrát","info":"Více info","series":"Seriál","prev":"Předchozí","next":"Další","go":"Přejít na","season_one":"sezóna","season_few":"sezóny","season_many":"sezóny","season_other":"sezón"},
     "da": {"watch":"Se nu","info":"Mere info","series":"Serie","prev":"Forrige","next":"Næste","go":"Gå til","season_one":"sæson","season_other":"sæsoner"},
-    "de": {"watch":"Jetzt ansehen","info":"Mehr Infos","series":"Serie","prev":"Zurück","next":"Weiter","go":"Gehe zu","season_one":"Staffel","season_other":"Staffeln"},
+    "de": {"watch":"Jetzt ansehen","info":"Mehr Infos","series":"Serie","prev":"Zurück","next":"Weiter","go":"Gehe zu","season_one":"Staffel","season_other":"Staffeln","tags":"Tags","links":"Links","watched":"✓ Gesehen","no_favs":"Du hast noch keine Favoriten\nTippe auf das ♥ bei einem Film oder einer Serie, dann erscheint er hier"},
     "el": {"watch":"Δες τώρα","info":"Περισσότερα","series":"Σειρά","prev":"Προηγούμενο","next":"Επόμενο","go":"Μετάβαση σε","season_one":"σεζόν","season_other":"σεζόν"},
-    "es": {"watch":"Ver ahora","info":"Más info","series":"Serie","prev":"Anterior","next":"Siguiente","go":"Ir a","season_one":"temporada","season_other":"temporadas"},
+    "es": {"watch":"Ver ahora","info":"Más info","series":"Serie","prev":"Anterior","next":"Siguiente","go":"Ir a","season_one":"temporada","season_other":"temporadas","tags":"Etiquetas","links":"Enlaces","watched":"✓ Visto","no_favs":"Aún no tienes favoritos\nPulsa el ♥ en cualquier peli o serie y aparecerá aquí"},
     "fi": {"watch":"Katso nyt","info":"Lisätietoja","series":"Sarja","prev":"Edellinen","next":"Seuraava","go":"Siirry","season_one":"kausi","season_other":"kautta"},
-    "fr": {"watch":"Regarder","info":"Plus d'infos","series":"Série","prev":"Précédent","next":"Suivant","go":"Aller à","season_one":"saison","season_other":"saisons"},
+    "fr": {"watch":"Regarder","info":"Plus d'infos","series":"Série","prev":"Précédent","next":"Suivant","go":"Aller à","season_one":"saison","season_other":"saisons","tags":"Étiquettes","links":"Liens","watched":"✓ Vu","no_favs":"Vous n'avez pas encore de favoris\nAppuyez sur le ♥ d'un film ou d'une série et il apparaîtra ici"},
     "hu": {"watch":"Megnézem","info":"További infó","series":"Sorozat","prev":"Előző","next":"Következő","go":"Ugrás ide","season_one":"évad","season_other":"évad"},
-    "it": {"watch":"Guarda ora","info":"Maggiori info","series":"Serie","prev":"Precedente","next":"Successivo","go":"Vai a","season_one":"stagione","season_other":"stagioni"},
+    "it": {"watch":"Guarda ora","info":"Maggiori info","series":"Serie","prev":"Precedente","next":"Successivo","go":"Vai a","season_one":"stagione","season_other":"stagioni","tags":"Tag","links":"Link","watched":"✓ Visto","no_favs":"Non hai ancora preferiti\nTocca il ♥ su un film o una serie e comparirà qui"},
     "ja": {"watch":"今すぐ見る","info":"詳細","series":"シリーズ","prev":"前へ","next":"次へ","go":"移動","season_other":"シーズン"},
     "ko": {"watch":"지금 보기","info":"상세 정보","series":"시리즈","prev":"이전","next":"다음","go":"이동","season_other":"시즌"},
     "nb": {"watch":"Se nå","info":"Mer info","series":"Serie","prev":"Forrige","next":"Neste","go":"Gå til","season_one":"sesong","season_other":"sesonger"},
     "nl": {"watch":"Nu kijken","info":"Meer info","series":"Serie","prev":"Vorige","next":"Volgende","go":"Ga naar","season_one":"seizoen","season_other":"seizoenen"},
     "pl": {"watch":"Oglądaj","info":"Więcej info","series":"Serial","prev":"Poprzedni","next":"Następny","go":"Przejdź do","season_one":"sezon","season_few":"sezony","season_many":"sezonów","season_other":"sezonu"},
-    "pt-br": {"watch":"Assistir agora","info":"Mais info","series":"Série","prev":"Anterior","next":"Próximo","go":"Ir para","season_one":"temporada","season_other":"temporadas"},
-    "pt": {"watch":"Ver agora","info":"Mais info","series":"Série","prev":"Anterior","next":"Seguinte","go":"Ir para","season_one":"temporada","season_other":"temporadas"},
+    "pt-br": {"watch":"Assistir agora","info":"Mais info","series":"Série","prev":"Anterior","next":"Próximo","go":"Ir para","season_one":"temporada","season_other":"temporadas","tags":"Tags","links":"Links","watched":"✓ Assistido","no_favs":"Você ainda não tem favoritos\nToque no ♥ em qualquer filme ou série e ele aparecerá aqui"},
+    "pt": {"watch":"Ver agora","info":"Mais info","series":"Série","prev":"Anterior","next":"Seguinte","go":"Ir para","season_one":"temporada","season_other":"temporadas","tags":"Etiquetas","links":"Ligações","watched":"✓ Visto","no_favs":"Ainda não tens favoritos\nToca no ♥ em qualquer filme ou série e aparecerá aqui"},
     "ro": {"watch":"Vizionează","info":"Mai multe info","series":"Serial","prev":"Anterior","next":"Următorul","go":"Mergi la","season_one":"sezon","season_few":"sezoane","season_other":"de sezoane"},
     "ru": {"watch":"Смотреть","info":"Подробнее","series":"Сериал","prev":"Назад","next":"Вперёд","go":"Перейти к","season_one":"сезон","season_few":"сезона","season_many":"сезонов","season_other":"сезона"},
     "sv": {"watch":"Titta nu","info":"Mer info","series":"Serie","prev":"Föregående","next":"Nästa","go":"Gå till","season_one":"säsong","season_other":"säsonger"},
@@ -77,6 +57,38 @@
     try { cat = new Intl.PluralRules(L.code).select(n); } catch (e) {}
     return n + ' ' + (L['season_' + cat] || L.season_other);
   }
+
+  /* Textos que usa el CSS (etiquetas, «✓ Visto»…): variables --nb-t-* con el idioma activo. */
+  var textosPara = null;
+  function css(t) { return '"' + String(t).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\A ') + '"'; }
+  function aplicarTextos(L, uid) {
+    if (textosPara === L.code + '|' + uid) return;
+    textosPara = L.code + '|' + uid;
+    var st = document.documentElement.style;
+    st.setProperty('--nb-t-tags', css(L.tags)); st.setProperty('--nb-t-links', css(L.links));
+    st.setProperty('--nb-t-watched', css(L.watched)); st.setProperty('--nb-t-nofavs', css(L.no_favs));
+  }
+  function uidActual() { try { return (window.ApiClient && window.ApiClient.getCurrentUserId && window.ApiClient.getCurrentUserId()) || ''; } catch (e) { return ''; } }
+
+  /* La app de Jellyfin para iOS (WKWebView) puede entrar en un bucle de recargas con el carrusel: en iOS no se carga. */
+  if (/iPhone|iPad|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1)) { aplicarTextos(idioma({ lang: (window.NebulaHero || {}).lang }), ''); return; }
+  /* Ajustes: se leen de variables CSS (ponlas en «CSS personalizado», ver README) o de window.NebulaHero.
+     Ejemplo:  :root { --nb-hero-count: 10; --nb-hero-source: toprated; --nb-hero-library: "Películas"; } */
+  var DEF = {
+    lang: '',                 // idioma de los textos (es, en, it...); vacío = el del usuario
+    count: 8,                 // títulos en el carrusel (0 = sin carrusel)
+    interval: 8,              // segundos entre diapositivas (0 = sin autoavance)
+    source: 'recent',         // recent | random | toprated | favorites
+    types: 'Movie,Series',    // Movie, Series o ambos
+    library: '',              // nombre(s) de biblioteca separados por coma; vacío = todas
+    days: 120,                // solo añadidos en los últimos N días (source=recent); 0 = sin límite
+    unwatched: 1,             // 1 = solo no vistos
+    logo: 1,                  // 1 = solo títulos con logo; 0 = también sin logo (muestra el nombre)
+    overview: 1, genres: 1, rating: 1,
+    buttons: 1,               // botones «Ver ahora» / «Más info»
+    play: 1                   // 1 = «Ver ahora» reproduce directamente
+  };
+  var cache = null, cacheKey = null, cacheAt = 0;
 
   function cfg() {
     var c = {}, st = getComputedStyle(document.documentElement), ext = window.NebulaHero || {};
@@ -259,11 +271,12 @@
   window.addEventListener('popstate', function () { setTimeout(cerrarMenusMui, 0); });
   window.addEventListener('hashchange', function () { setTimeout(cerrarMenusMui, 0); });
 
-  var pend = false;
+  var pend = false, textosPara_uid = null;
+  aplicarTextos(idioma(cfg()), '');
   new MutationObserver(function () {
     if (pend) return; pend = true;
     // en segundo plano no hay fotogramas (rAF congelado): usamos un temporizador
-    (document.hidden ? function (f) { setTimeout(f, 50); } : requestAnimationFrame)(function () { pend = false; cssPanel(); if (enHome()) montar(); else autoplay(); });
+    (document.hidden ? function (f) { setTimeout(f, 50); } : requestAnimationFrame)(function () { pend = false; cssPanel(); var u = uidActual(); if (u !== textosPara_uid) { textosPara_uid = u; aplicarTextos(idioma(cfg()), u); } if (enHome()) montar(); else autoplay(); });
   }).observe(document.documentElement, { childList: true, subtree: true });
   window.addEventListener('hashchange', function () { cssPanel(); montar(); });
 })();
