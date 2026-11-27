@@ -38,8 +38,7 @@ File name = language code as Jellyfin uses it (`it.json`, `pt-BR.json`, `zh-CN.j
 | `series` | Shown instead of the season count when it is unknown |
 | `prev`, `next` | Arrow buttons (screen readers) |
 | `go` | Dots under the carousel, "Go to 3" (screen readers) |
-| `tags`, `links`, `watched`, `no_favs` | Texts used by the stylesheet: "Tags" and "Links" labels on the item page, the "✓ Watched" badge on episodes, and the empty-favourites message (`
-` splits the two lines) |
+| `tags`, `links`, `watched`, `no_favs` | Texts used by the stylesheet: "Tags" and "Links" labels on the item page, the "✓ Watched" badge on episodes, and the empty-favourites message (`\n` splits the two lines) |
 | `season_<category>` | Word after the number: "**3** seasons". The number is added by the code |
 
 ### Plurals
